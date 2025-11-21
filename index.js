@@ -1,43 +1,54 @@
-import makeWASocket, { useMultiFileAuthState } from "@whiskeysockets/baileys";
-import qrcode from "qrcode-terminal";
-import dotenv from "dotenv";
-dotenv.config();
+import makeWASocket, { useMultiFileAuthState, fetchLatestBaileysVersion, makeInMemoryStore } from '@whiskeysockets/baileys'
+import pino from 'pino'
+import qrcode from 'qrcode-terminal'
 
-const startBot = async () => {
-  const { state, saveCreds } = await useMultiFileAuthState("./session");
+async function connectBot() {
+    const { state, saveCreds } = await useMultiFileAuthState('./session')
+    const { version } = await fetchLatestBaileysVersion()
 
-  const sock = makeWASocket({
-    printQRInTerminal: true,
-    auth: state,
-    browser: ["DayBot MD", "Chrome", "1.0"],
-  });
+    console.log(`
+================================================
+ 💗 DAYBOT-MD CONEXIÓN WHATSAPP 
+================================================
+Selecciona el tipo de QR:
+1 = QR normal (imagen)
+2 = QR en texto
+================================================
+`)
 
-  sock.ev.on("creds.update", saveCreds);
+    process.stdout.write("Ingresa opción (1 o 2): ")
 
-  sock.ev.on("connection.update", (update) => {
-    const { qr, connection } = update;
+    process.stdin.on('data', async (data) => {
+        const opcion = data.toString().trim()
 
-    if (qr) {
-      console.log("Escanea el código QR:");
-      qrcode.generate(qr, { small: true });
-    }
+        if (opcion !== "1" && opcion !== "2") {
+            console.log("❌ Opción inválida, escribe 1 o 2.")
+            return
+        }
 
-    if (connection === "open") {
-      console.log("🔥 DayBot MD está conectado!");
-    }
-  });
+        const sock = makeWASocket({
+            printQRInTerminal: opcion === "1" ? true : false,
+            browser: ['DayBot-MD', 'Chrome', '1.0'],
+            auth: state,
+            logger: pino({ level: 'silent' })
+        })
 
-  sock.ev.on("messages.upsert", async ({ messages }) => {
-    const msg = messages[0];
-    if (!msg.message) return;
+        // Generar QR de texto (ASCII)
+        if (opcion === "2") {
+            sock.ev.on('connection.update', async (update) => {
+                const { qr } = update
+                if (qr) {
+                    console.log("➡️ Escanea este QR en texto:")
+                    qrcode.generate(qr, { small: true })
+                }
+            })
+        }
 
-    const from = msg.key.remoteJid;
-    const text = msg.message.conversation || "";
+        sock.ev.on('creds.update', saveCreds)
+        console.log("✨ Esperando conexión a WhatsApp...")
 
-    if (text.toLowerCase() === "hola") {
-      await sock.sendMessage(from, { text: "Hola! Soy DayBot MD 🤖✨" });
-    }
-  });
-};
+        process.stdin.pause()
+    })
+}
 
-startBot();
+connectBot()
