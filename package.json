@@ -1,15 +1,16 @@
 {
-  "name": "daybot-md",
+  "name": "DayBot-MD",
   "version": "1.0.0",
-  "description": "Bot WhatsApp MD de Dayana",
+  "description": "DayBot-MD WhatsApp Bot estilo GojoBot, cute Hello Kitty y con QR normal + QR escrito",
   "main": "index.js",
-  "type": "module",
   "scripts": {
     "start": "node index.js"
   },
+  "author": "Dayana",
+  "license": "MIT",
   "dependencies": {
-    "@whiskeysockets/baileys": "latest",
-    "qrcode-terminal": "latest",
-    "dotenv": "latest"
+    "@whiskeysockets/baileys": "^6.7.6",
+    "pino": "^8.14.1",
+    "qrcode-terminal": "^0.12.0"
   }
 }
